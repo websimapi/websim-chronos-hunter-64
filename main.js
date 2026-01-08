@@ -204,11 +204,11 @@ function gameLoop() {
     const delta = engine.clock.getDelta();
     const time = Date.now() * 0.001;
 
-    player.update(delta, world.colliders);
+    player.update(delta, world);
     world.update(time);
 
     // Update Enemies
-    enemies.forEach(enemy => enemy.update(delta, player.camera.position));
+    enemies.forEach(enemy => enemy.update(delta, player.camera.position, world));
 
     engine.render();
 }

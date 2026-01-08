@@ -77,7 +77,7 @@ export class Player {
         }
     }
 
-    update(delta, colliders) {
+    update(delta, world) {
         // Apply friction
         this.velocity.x -= this.velocity.x * 10.0 * delta;
         this.velocity.z -= this.velocity.z * 10.0 * delta;
@@ -99,10 +99,13 @@ export class Player {
         
         this.camera.position.y += this.velocity.y * delta;
 
-        // Simple Ground Collision
-        if (this.camera.position.y < 2.0) {
+        // Terrain Collision
+        const terrainH = world.getTerrainHeight(this.camera.position.x, this.camera.position.z);
+        const playerHeight = 2.0;
+
+        if (this.camera.position.y < terrainH + playerHeight) {
             this.velocity.y = 0;
-            this.camera.position.y = 2.0;
+            this.camera.position.y = terrainH + playerHeight;
             this.canJump = true;
         }
 
@@ -154,7 +157,7 @@ export class Enemy {
         this.scene.remove(this.mesh);
     }
 
-    update(delta, playerPos) {
+    update(delta, playerPos, world) {
         if (!this.active) return;
         
         const dist = this.mesh.position.distanceTo(playerPos);
@@ -167,5 +170,9 @@ export class Enemy {
             // Bobbing animation
             this.mesh.children[0].position.y = 1 + Math.sin(Date.now() * 0.01) * 0.2;
         }
+
+        // Snap to terrain
+        const terrainH = world.getTerrainHeight(this.mesh.position.x, this.mesh.position.z);
+        this.mesh.position.y = terrainH;
     }
 }

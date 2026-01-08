@@ -7,6 +7,10 @@ export class World {
         this.colliders = [];
     }
 
+    getTerrainHeight(x, z) {
+        return Math.sin(x * 0.05) * 2 + Math.cos(z * 0.05) * 2;
+    }
+
     buildJungle() {
         // Textures
         const grassTex = this.textureLoader.load('grass_moss.png');
@@ -27,9 +31,9 @@ export class World {
         for (let i = 0; i < posAttribute.count; i++) {
             const x = posAttribute.getX(i);
             const y = posAttribute.getY(i);
-            // Simple sine wave terrain
-            const z = Math.sin(x * 0.05) * 2 + Math.cos(y * 0.05) * 2 + Math.random() * 0.5;
-            posAttribute.setZ(i, z);
+            // World Z is -y due to rotation
+            const h = this.getTerrainHeight(x, -y);
+            posAttribute.setZ(i, h);
         }
         groundGeo.computeVertexNormals();
         
