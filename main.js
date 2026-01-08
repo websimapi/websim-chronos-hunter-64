@@ -158,7 +158,7 @@ function setupControls() {
              // Rotate player view
              player.camera.rotation.y -= data.vector.x * 0.05;
              // Vertical look (clamped)
-             player.camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, player.camera.rotation.x - data.vector.y * 0.05));
+             player.camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, player.camera.rotation.x + data.vector.y * 0.05));
         });
 
         // Buttons

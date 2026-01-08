@@ -4,6 +4,7 @@ import { PointerLockControls } from 'three/addons/controls/PointerLockControls.j
 export class Player {
     constructor(graphics, audio) {
         this.camera = graphics.camera;
+        this.camera.rotation.order = 'YXZ';
         this.domElement = graphics.renderer.domElement;
         this.audio = audio;
         
