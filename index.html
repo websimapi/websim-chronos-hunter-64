@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Chronos Hunter 64</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', Courier, monospace; user-select: none; }
+        #game-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        
+        /* UI Overlay */
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; }
+        
+        /* Loading Screen */
+        #loading-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: auto; }
+        #loading-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
+        .loading-text { color: #00ffcc; font-size: 24px; letter-spacing: 4px; text-transform: uppercase; text-shadow: 0 0 10px #00ffcc; margin-top: 20px; }
+        .progress-bar { width: 300px; height: 10px; border: 2px solid #333; margin-top: 20px; position: relative; }
+        .progress-fill { height: 100%; background: #00ffcc; width: 0%; transition: width 0.1s; }
+
+        /* Main Menu */
+        #main-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 50; display: none; flex-direction: column; align-items: center; justify-content: center; pointer-events: auto; background: rgba(0,0,0,0.4); }
+        .menu-title { font-size: 48px; color: #ffcc00; text-shadow: 4px 4px 0px #330000; margin-bottom: 40px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; }
+        .menu-btn { 
+            background: linear-gradient(90deg, rgba(0,0,0,0.8), rgba(50,50,50,0.8)); 
+            border: 2px solid #555; 
+            border-left: 5px solid #ffcc00;
+            color: #ddd; 
+            padding: 15px 40px; 
+            margin: 10px; 
+            font-size: 24px; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+            text-transform: uppercase;
+            width: 250px;
+            text-align: center;
+        }
+        .menu-btn:hover { background: #333; color: #fff; transform: scale(1.05); border-left-color: #00ffcc; text-shadow: 0 0 8px #00ffcc; }
+
+        /* HUD */
+        #hud { display: none; width: 100%; height: 100%; padding: 20px; box-sizing: border-box; }
+        .hud-row { display: flex; justify-content: space-between; width: 100%; }
+        .stat-box { display: flex; align-items: center; }
+        .stat-icon { width: 40px; height: 40px; background: #333; border: 2px solid #555; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 10px; color: #fff; font-weight: bold; }
+        .stat-bar-container { width: 150px; height: 15px; background: #222; border: 1px solid #444; transform: skewX(-20deg); overflow: hidden; }
+        .stat-bar { height: 100%; width: 100%; transform: skewX(20deg) translateX(-10px); width: 110%; } /* Unskew content */
+        
+        #health-bar { background: linear-gradient(90deg, #ff3333, #990000); width: 100%; }
+        #ammo-counter { position: absolute; bottom: 30px; right: 30px; font-size: 48px; color: #00ffcc; font-weight: bold; text-shadow: 0 0 10px rgba(0,255,204,0.5); font-family: sans-serif; }
+        #crosshair { position: absolute; top: 50%; left: 50%; width: 20px; height: 20px; transform: translate(-50%, -50%); pointer-events: none; opacity: 0.8; }
+
+        /* Mobile Controls */
+        #mobile-controls { display: none; position: absolute; bottom: 20px; width: 100%; height: 150px; pointer-events: none; }
+        .control-zone { position: absolute; bottom: 20px; width: 120px; height: 120px; pointer-events: auto; }
+        #zone-left { left: 20px; }
+        #zone-right { right: 20px; }
+        .action-btn { position: absolute; width: 60px; height: 60px; border-radius: 50%; background: rgba(255, 255, 255, 0.2); border: 2px solid rgba(255,255,255,0.4); pointer-events: auto; display: flex; justify-content: center; align-items: center; color: white; font-weight: bold; user-select: none; touch-action: manipulation; }
+        .action-btn:active { background: rgba(255, 255, 255, 0.5); }
+        #btn-jump { bottom: 100px; right: 20px; }
+        #btn-fire { bottom: 40px; right: 140px; width: 70px; height: 70px; background: rgba(255, 50, 50, 0.2); border-color: rgba(255, 50, 50, 0.5); }
+
+    </style>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://esm.sh/three@0.160.0",
+                "three/addons/": "https://esm.sh/three@0.160.0/examples/jsm/",
+                "nipplejs": "https://esm.sh/nipplejs@0.10.1"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="game-container"></div>
+    
+    <div id="loading-screen">
+        <canvas id="loading-canvas"></canvas>
+        <div class="loading-text">INITIALIZING CHRONOS LINK</div>
+        <div class="progress-bar"><div class="progress-fill" id="loading-progress"></div></div>
+    </div>
+
+    <div id="main-menu">
+        <div class="menu-title">Chronos Hunter</div>
+        <div class="menu-btn" id="btn-start">Enter Portal</div>
+        <div class="menu-btn" id="btn-options">Neural Link</div>
+    </div>
+
+    <div id="ui-layer">
+        <div id="hud">
+            <div class="hud-row">
+                <div class="stat-box">
+                    <div class="stat-icon" style="background: #900;">H</div>
+                    <div class="stat-bar-container"><div class="stat-bar" id="health-bar"></div></div>
+                </div>
+            </div>
+            <div id="ammo-counter">50</div>
+            <svg id="crosshair" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="40" stroke="#00ffcc" stroke-width="4" fill="none" />
+                <circle cx="50" cy="50" r="4" fill="#00ffcc" />
+            </svg>
+        </div>
+        
+        <div id="mobile-controls">
+            <div id="zone-left" class="control-zone"></div>
+            <div id="zone-right" class="control-zone"></div> <!-- Look stick -->
+            <div id="btn-jump" class="action-btn">JUMP</div>
+            <div id="btn-fire" class="action-btn">FIRE</div>
+        </div>
+    </div>
+
+    <script type="module" src="./main.js"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4c6229722a6346bc8eb5cb0e5eae5d41","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>
